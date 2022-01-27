@@ -1,9 +1,8 @@
 FROM python:3.8-slim-buster
- 
-WORKDIR /TicketIntegration
-COPY . /TicketIntegration
- 
+
+RUN mkdir /app
+WORKDIR /app
+ADD . /app/
 RUN pip install -r requirements.txt
- 
-ENTRYPOINT ["python"]
-CMD ["TicketIntegration.py"]
+
+CMD ["python", "/app/TicketIntegration.py"]
