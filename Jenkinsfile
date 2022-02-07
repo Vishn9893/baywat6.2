@@ -1,31 +1,34 @@
-pipeline {
-  agent { label 'master' }
-  options {
-    buildDiscarder(logRotator(numToKeepStr: '5'))
-  }
-  environment {
-    DOCKERHUB_CREDENTIALS = credentials('vishblip93-dockerhub')
-  }
-  stages {
-    stage('Build') {
-      steps {
-        sh 'docker build -t vishblip93/baywa:latest .'
-      }
+node {
+    def app
+
+    stage('Clone repository') {
+      
+
+        checkout scm
     }
-    stage('Login') {
-      steps {
-        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-      }
+
+    stage('Build image') {
+  
+       app = docker.build("vishblip93/baywatest")
     }
-    stage('Push') {
-      steps {
-        sh 'docker push vishblip93/baywa:latest'
-      }
+
+    stage('Test image') {
+  
+
+        app.inside {
+            sh 'echo "Tests passed"'
+        }
     }
-  }
-  post {
-    always {
-      sh 'docker logout'
+
+    stage('Push image') {
+        
+        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
+            app.push("${env.BUILD_NUMBER}")
+        }
     }
-  }
+    
+    stage('Trigger ManifestUpdate') {
+                echo "triggering updatemanifestjob"
+                build job: 'updatemanifest', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
+        }
 }
